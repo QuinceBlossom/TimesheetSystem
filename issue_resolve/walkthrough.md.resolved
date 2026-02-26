@@ -1,0 +1,62 @@
+# Admin Edit and Manager Assignment Feature
+
+## Thay đổi đã thực hiện
+
+1. **Cơ sở dữ liệu**:
+   - Thêm cột `manager_id` vào bảng `users` để hỗ trợ gán nhân viên cho quản lý tương ứng.
+
+2. **Backend (API)**:
+   - Cập nhật API `POST /users/add` để cho phép truyền thêm `manager_id` khi tạo nhân viên mới.
+   - Bổ sung API `PUT /users/update/:id` cho phép cập nhật thông tin nhân viên, bao gồm việc quản lý thay đổi mật khẩu (nếu để trống thì giữ nguyên mật khẩu cũ) và thay đổi `manager_id`.
+
+3. **Frontend (Admin Dashboard)**:
+   - Thêm cột **Người quản lý** vào bảng danh sách người dùng để hiển thị rõ tên của quản lý được gán cho nhân viên.
+   - Thêm nút hành động **Sửa** bên cạnh nút **Xóa** ở cột "Hành động".
+   - Tái sử dụng Modal nhập liệu cũ thành Modal đa năng (Thêm mới & Sửa thông tin), trong đó nếu là sửa thì các trường sẽ được tự động điền thông tin cũ.
+   - Thêm trường lựa chọn **Người quản lý** vào cả form Thêm và form Sửa, danh sách này tự động lọc những user có role là `manager` hoặc `admin`.
+
+## Hướng dẫn kiểm tra
+
+Vui lòng chạy lại project (cả Frontend và Backend) và kiểm tra theo các bước sau:
+
+1. Đăng nhập vào hệ thống bằng tài khoản `admin`.
+2. Mở sang trang **Quản lý hệ thống** (Admin Dashboard).
+3. Kiểm tra xem trên bảng nhân viên có hiển thị cột "Người quản lý" và nút "Sửa" ở phần Hành động hay chưa.
+4. Nhấn nút **Sửa** ở một nhân viên bất kỳ:
+   - Thông tin cũ của nhân viên đó phải tự động được điền lên Form.
+   - Chọn một **Người quản lý** ở mục dropdown.
+   - Nhấn **Lưu lại** và đảm bảo thông tin nhân viên đã được thay đổi thành công, cũng như bảng hiển thị được cập nhật lại chính xác.
+5. Thử nhấn nút **Thêm nhân viên mới**, bạn cũng sẽ nhìn thấy trường chọn "Người quản lý" ở Form thêm mới như đã yêu cầu.
+
+> [!NOTE]
+> Mật khẩu khi sửa nếu được bỏ trống, hệ thống sẽ tự động giữ nguyên mật khẩu cũ theo đúng nghiệp vụ để tránh làm mất mật khẩu của người dùng.
+
+## Phân quyền Dashboard Cấp Quản Lý
+
+1. **Backend (API)**:
+   - Cập nhật API `GET /manager/stats` để nhận tham số `managerId`. Nếu có `managerId`, API sẽ chỉ đếm và trả về danh sách các nhân viên có `manager_id` tương ứng với ID của quản lý đang yêu cầu.
+
+2. **Frontend (Manager Dashboard)**:
+   - Cập nhật trang [ManagerDashboard.jsx](file:///d:/DoAnTotNghiep/frontend/src/components/ManagerDashboard.jsx) để tự động truyền `user.id` (của manager đang đăng nhập) vào API.
+   - Nhờ đó, Quản lý A sẽ chỉ nhìn thấy và được phép Duyệt/Hủy/Nhập hộ công việc cho Nhân viên A, B (nếu được Admin gán). Quản lý B sẽ chỉ nhìn thấy Nhân viên C.
+
+**Cách kiểm thử:**
+1. Dùng tài khoản Admin, gán nhân viên A cho Manager 1.
+2. Đăng xuất, đăng nhập vào tài khoản Manager 1.
+3. Ở trang chủ Dashboard của Manager 1, xác nhận rằng chỉ hiển thị duy nhất nhân viên A, không hiển thị các nhân viên khác.
+
+## Quản lý Phiên (Session) & Phân quyền Admin
+1. **Kiểm tra tự tác động lên bản thân:**
+   - Khi đăng nhập bằng tài khoản Admin, bạn sẽ KHÔNG thấy nút Khóa/Mở khóa hay nút Xóa ở dòng danh sách của chính bạn.
+2. **Kiểm tra luồng Xóa nhân viên:**
+   - Để xóa một nhân viên, bạn bắt buộc phải nhấn **Khóa** trước. Nút **Xóa** sẽ chỉ xuất hiện khi trạng thái của nhân viên đó là `Blocked`.
+3. **Kiểm tra Force-Logout (chặn đăng nhập khi thao tác):**
+   - Đăng nhập tài khoản Nhân viên A trên một trình duyệt (hoặc tab ẩn danh).
+   - Ở tab chính (Admin), ấn **Khóa** Nhân viên A.
+   - Quay lại tab Nhân viên A, thử ấn lưu chấm công hoặc chuyển tuần. Hệ thống lập tức hiện lên thông báo "Phiên đăng nhập không hợp lệ!" và đá văng nhân viên A ra ngoài màn hình Đăng nhập.
+4. **Kiểm tra đăng nhập bị khóa:**
+   - Sau khi Nhân viên A đã bị khóa, thử đăng nhập lại với đúng tài khoản mật khẩu. Hệ thống sẽ báo "Tài khoản của bạn đã bị tạm khóa...".
+5. **Kiểm tra Bảo vệ Admin Chính (Main Admin Rule):**
+   - Đăng nhập bằng tài khoản "Admin Chính" (ID = 1). Admin chính có thể thấy nút Khóa/Mở khóa và Xóa của các Admin phó khác và thao tác bình thường.
+   - Đăng nhập bằng tài khoản một "Admin Phó" (ID khác 1). 
+   - Admin phó sẽ nhìn thấy dòng của Admin chính hiển thị dòng chữ `🔒 (Admin chính)` thay vì các nút Khóa/Xóa. Admin phó cũng không thể Khóa/Xóa Admin phó khác qua API (Hệ thống sẽ báo lỗi).
