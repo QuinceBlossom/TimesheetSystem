@@ -5,7 +5,7 @@ DROP DATABASE IF EXISTS timesheet_db;
 CREATE DATABASE timesheet_db;
 USE timesheet_db;
 
--- 2. Tạo bảng Users (Đã bao gồm cột PASSWORD và ROLE)
+-- 2. Tạo bảng Users (Đã bổ sung manager_id và status)
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
@@ -13,7 +13,10 @@ CREATE TABLE users (
     department VARCHAR(50),
     password VARCHAR(50) DEFAULT '123',
     role VARCHAR(20) DEFAULT 'staff', -- Cột phân quyền: admin, manager, staff
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    status VARCHAR(20) DEFAULT 'Active', -- Trạng thái tài khoản: Active, Blocked
+    manager_id INT NULL, -- Lưu ID của Manager quản lý nhân viên này
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (manager_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- 3. Tạo bảng Tasks
@@ -23,7 +26,7 @@ CREATE TABLE tasks (
     task_name VARCHAR(100) NOT NULL
 );
 
--- 4. Tạo bảng WorkLogs
+-- 4. Tạo bảng WorkLogs (Đã bổ sung status)
 CREATE TABLE work_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -32,17 +35,17 @@ CREATE TABLE work_logs (
     category VARCHAR(50),
     hours FLOAT NOT NULL DEFAULT 0,
     description TEXT,
+    status VARCHAR(20) DEFAULT 'Pending', -- Trạng thái duyệt: Pending, Approved, Rejected
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (task_id) REFERENCES tasks(id)
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
 );
 
--- 5. Nạp dữ liệu mẫu (Đầy đủ chức vụ)
--- Dữ liệu mẫu Demo (Tên ngắn gọn dễ nhớ)
-INSERT INTO users (username, full_name, department, password, role) VALUES 
-('admin',   'Phạm Khương Duy', 'Ban Giám Đốc',       '123', 'admin'),
-('manager', 'Quản Lý Mẫu',      'Phòng Quản Lý',      '123', 'manager'),
-('staff',   'Nhân Viên Mẫu',   'Phòng Kỹ Thuật',     '123', 'staff');               
+-- 5. Nạp dữ liệu mẫu (Đầy đủ chức vụ và liên kết Manager - Staff)
+INSERT INTO users (username, full_name, department, password, role, status, manager_id) VALUES 
+('admin',   'Phạm Khương Duy', 'Ban Giám Đốc',       '123', 'admin', 'Active', NULL),
+('manager', 'Quản Lý Mẫu',      'Phòng Quản Lý',      '123', 'manager', 'Active', NULL),
+('staff',   'Nhân Viên Mẫu',   'Phòng Kỹ Thuật',     '123', 'staff', 'Active', 2);              
 
 INSERT INTO tasks (task_group, task_name) VALUES 
 ('Product Kiểm thử', 'Setting'),
